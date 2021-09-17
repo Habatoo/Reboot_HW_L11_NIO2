@@ -6,10 +6,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -20,9 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class WorkWithFilesTest {
 
-    WorkWithFiles workWithFiles;
+    private WorkWithFiles workWithFiles;
     private ByteArrayOutputStream outContent;
     private PrintStream originalOut;
+    private String filesDirectory;
 
     /**
      * Инициализация экземпляров тестируемого класса {@link WorkWithFilesTest}.
@@ -30,6 +34,8 @@ class WorkWithFilesTest {
     @BeforeEach
     void setUp() {
         workWithFiles = new WorkWithFiles();
+        filesDirectory = "src/test/java/TestFiles/";
+        //filesDirectory = "..\\TestFiles\\";
 
         outContent = new ByteArrayOutputStream();
         originalOut = System.out;
@@ -52,23 +58,76 @@ class WorkWithFilesTest {
      * Метод  объект класса {@link WorkWithFilesTest#walkingDirectory_Test},
      * проверить метод {@link WorkWithFiles#walkingDirectory},
      *
-     * Сценарий запускает создание объекта {@link Path} и проверяет отображение
+     * Сценарий проверяет отображение запускает создание объекта {@link Path} и проверяет отображение
      * тесктовой информации
      */
     @Test
     void walkingDirectory_Test() {
         workWithFiles.walkingDirectory(Paths.get("./"));
-        assertEquals("11", outContent.toString().trim());
+        assertEquals("14", outContent.toString().trim());
     }
 
     /**
      * Метод  объект класса {@link WorkWithFilesTest#warningsPrintingSuccess_Test},
      * проверить метод {@link WorkWithFiles#warningsPrinting},
-     * Сценарий запускает создание объекта {@link Path} копируемого файла
+     * Сценарий запускает создание объекта {@link Path} копируемого файла и проверяет,
+     * что метод отработал и, что содержимое файла соответствует целевому значению.
      */
     @Test
     void warningsPrintingSuccess_Test() {
-        workWithFiles.warningsPrinting(Paths.get("log"), Paths.get("new"));
+
+        String inputFilePath = filesDirectory + "log.txt";
+        String outputFilePath = filesDirectory + "new.txt";
+        Paths.get(inputFilePath);
+        try {
+            workWithFiles.warningsPrinting(Paths.get(inputFilePath), Paths.get(outputFilePath));
+            Assertions.assertEquals(
+                    "WARN No database could be detected \n" +
+                            "WARN Performing manual recovery\n",
+                    Files.lines(Paths.get(outputFilePath))
+                            .filter(s -> s.startsWith("WARN"))
+                            .map(s -> s + "\n")
+                            .collect(Collectors.toList())
+                            .toString()
+                            .replace("[", "")
+                            .replace("]", "")
+                            .replace(", ", ""));
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
+        }
+    }
+
+    /**
+     * Метод  объект класса {@link WorkWithFilesTest#warningsPrintingSuccess_Test},
+     * проверить метод {@link WorkWithFiles#warningsPrinting},
+     * Сценарий запускает создание объекта {@link Path} копируемого файла с значениями
+     * копируемого и копии файла null, проверяет что методу выбрасывает IOException.
+     */
+    @Test
+    void warningsPrintingFail_Test() {
+
+        String inputFilePath = filesDirectory + "none_log";
+        String outputFilePath = filesDirectory + "none_new";
+
+        Throwable throwable = Assertions.assertThrows(
+                IOException.class, () -> workWithFiles.warningsPrinting(
+                        Paths.get(inputFilePath), Paths.get(outputFilePath)));
+        Assertions.assertEquals("Input or output file does not exist", throwable.getMessage());
+    }
+
+    /**
+     * Метод  объект класса {@link WorkWithFilesTest#warningsPrintingNull_Test},
+     * проверить метод {@link WorkWithFiles#warningsPrinting},
+     * Сценарий запускает создание объекта {@link Path} копируемого файла с значениями
+     * копируемого и копии файла null, проверяет что методу выбрасывает IOException.
+     */
+    @Test
+    void warningsPrintingNull_Test() {
+        Throwable throwable = Assertions.assertThrows(
+                IOException.class, () -> workWithFiles.warningsPrinting(
+                        null,
+                        null));
+        Assertions.assertEquals("Input or output file does not exist", throwable.getMessage());
     }
 
     /**

@@ -28,6 +28,8 @@ class WorksWithPathsTest {
     void setUp() {
         worksWithPaths = new WorksWithPaths();
 
+
+
         outContent = new ByteArrayOutputStream();
         originalOut = System.out;
         System.setOut(new PrintStream(outContent));
