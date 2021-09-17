@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,40 +52,30 @@ public class WorkWithFiles {
      * @param sourceFile      - исходный файл с логом
      * @param destinationFile - целевой файл
      */
-    public void warningsPrinting(Path sourceFile, Path destinationFile) {
+    public void warningsPrinting(Path sourceFile, Path destinationFile) throws IOException {
 
-        if (null == sourceFile || null == destinationFile) {
-            return;
+        if (null == sourceFile || null == destinationFile
+                || Files.notExists(sourceFile) || Files.notExists(destinationFile)) {
+            throw new IOException("Input or output file does not exist");
         }
 
-        try {
-            String newSourceFile  = Files.lines(sourceFile)
-                    .filter(s -> s.startsWith("WARN"))
+        try (BufferedWriter bw = Files.newBufferedWriter(destinationFile, Charset.defaultCharset());
+             Stream<String> newSourceFile = Files.lines(sourceFile)) {
+
+            bw.write(newSourceFile.filter(s -> s.startsWith("WARN"))
                     .map(s -> s + "\n")
                     .collect(Collectors.toList())
                     .toString()
                     .replace("[", "")
                     .replace("]", "")
-                    .replace(", ", "");
-
-            if (new WorksWithPaths().workWithPath(sourceFile.toString())
-                    && new WorksWithPaths().workWithPath(destinationFile.toString())) {
-                try (BufferedWriter bw = Files.newBufferedWriter(destinationFile, Charset.defaultCharset())) {
-                    bw.write(newSourceFile);
-                } catch (IOException ioException) {
-                    ioException.getMessage();
-                    ioException.printStackTrace();
-                }
-            }
-
+                    .replace(", ", ""));
         } catch (NoSuchFileException noSuchFileException) {
             noSuchFileException.getMessage();
             noSuchFileException.printStackTrace();
-        } catch (IOException ioException) {
+                }
+        catch (IOException ioException) {
             ioException.getMessage();
             ioException.printStackTrace();
-        } finally {
-
         }
 
     }
@@ -100,6 +91,8 @@ public class WorkWithFiles {
 
         if (new WorksWithPaths().workWithPath(path.toString())) {
             try {
+                if (Files.exists(copyPath))
+                    Files.delete(copyPath);
                 Files.copy(path, copyPath);
                 return true;
             } catch (IOException ioException) {

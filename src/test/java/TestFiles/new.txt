@@ -1,0 +1,2 @@
+WARN No database could be detected 
+WARN Performing manual recovery
